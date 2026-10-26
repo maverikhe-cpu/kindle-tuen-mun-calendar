@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.request import urlopen, Request
 from zoneinfo import ZoneInfo
 from PIL import Image, ImageDraw, ImageFont
+from weather_symbols import LABELS, symbol
 
 OUT=Path(os.environ.get('OUTPUT_DIR','public')); OUT.mkdir(exist_ok=True)
 TZ=ZoneInfo('Asia/Hong_Kong')
@@ -41,7 +42,16 @@ def render(now,current,forecast,lunar=None):
     text(28,239,'屯门站气温',19)
     text(27,266,f"{station['value']}°C" if station else '暂无数据',58)
     label='实测 '+updated[11:16] if updated[:10]==now.strftime('%Y-%m-%d') else '实测 '+updated[:16].replace('T',' ')
-    text(29,337,label,16)
+    text(29,326,label,16)
+    codes=[code for code in current.get('icon',[]) if code in LABELS]
+    if codes:
+        im.paste(symbol(codes[0]),(28,348))
+        condition='全港：'+'/'.join(LABELS[code] for code in codes)
+        size=16
+        while size>10 and d.textlength(condition,font=ImageFont.truetype(FONT,size))>190:size-=1
+        text(64,354,condition,size)
+    else:
+        text(29,352,'天气情况暂无数据',16)
     days=[x for x in forecast.get('weatherForecast',[]) if x['forecastDate']>=now.strftime('%Y%m%d')][:2]
     for i,day in enumerate(days):
         x=265+i*160;dt=datetime.strptime(day['forecastDate'],'%Y%m%d')
