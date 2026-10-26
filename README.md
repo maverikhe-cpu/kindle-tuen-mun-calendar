@@ -11,3 +11,5 @@ GitHub Actions 每小时第 17、47 分钟计划生成图片，由 GitHub Pages 
 本地运行：`pip install -r requirements.txt`，设置 `FONT_PATH` 为中文字体路径，然后 `python render.py`。Linux 使用 Noto Sans CJK，macOS 默认使用系统黑体。
 
 数据来源：https://www.hko.gov.hk/en/abouthko/opendata_intro.htm
+
+农历日期由香港天文台公历与农历对照 API 按香港当天日期取得，显示干支年份和月日（包括闰月）。接口失败时明确显示农历暂不可用。

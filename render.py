@@ -11,6 +11,9 @@ TZ=ZoneInfo('Asia/Hong_Kong')
 FONT=os.environ.get('FONT_PATH','/System/Library/Fonts/STHeiti Medium.ttc')
 def fetch(kind):
     url='https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType='+kind+'&lang=sc'
+    return fetch_url(url)
+
+def fetch_url(url):
     for attempt in range(3):
         try:
             with urlopen(Request(url,headers={'User-Agent':'KindleCalendar/1.0'}),timeout=25) as r:return json.load(r)
@@ -18,7 +21,7 @@ def fetch(kind):
             if attempt==2:raise
             time.sleep(3)
 
-def render(now,current,forecast):
+def render(now,current,forecast,lunar=None):
     im=Image.new('L',(600,800),255); d=ImageDraw.Draw(im)
     def text(x,y,s,size=22,fill=0):d.text((x,y),str(s),font=ImageFont.truetype(FONT,size),fill=fill)
     def center(x,y,s,size=22,fill=0):
@@ -28,7 +31,9 @@ def render(now,current,forecast):
     text(28,75,f'{now.day:02}',110)
     text(205,94,'星期'+'一二三四五六日'[now.weekday()],38)
     text(207,150,now.strftime('%Y / %m / %d'),23)
-    text(207,186,'香港时间 · 每半小时更新',17)
+    lunar_date=(lunar or {}).get('LunarDate','').replace('閏','闰').replace('臘','腊')
+    lunar_year=(lunar or {}).get('LunarYear','').split('，')[0]
+    text(207,186,('农历 '+lunar_year+' '+lunar_date) if lunar_date else '农历暂不可用',20)
     rule(222)
     temps=current.get('temperature',{}).get('data',[])
     station=next((x for x in temps if x['place'] in ('屯门','屯門')),None)
@@ -65,11 +70,13 @@ def main():
     except Exception:current={}
     try:forecast=fetch('fnd')
     except Exception:forecast={}
-    im=render(now,current,forecast);im.save(OUT/'screen.png')
+    try:lunar=fetch_url('https://data.weather.gov.hk/weatherAPI/opendata/lunardate.php?date='+now.strftime('%Y-%m-%d'))
+    except Exception:lunar={}
+    im=render(now,current,forecast,lunar);im.save(OUT/'screen.png')
     image=(OUT/'screen.png').read_bytes();digest=hashlib.sha256(image).hexdigest()
     # Content-addressed image prevents manifest/image races during deployment.
     name='image-'+digest[:16]+'.png';(OUT/name).write_bytes(image)
-    meta={'schemaVersion':1,'generatedAt':int(now.timestamp()*1000),'sha256':digest,'image_url':name,'weatherUpdatedAt':current.get('updateTime'),'timezone':'Asia/Hong_Kong'}
+    meta={'schemaVersion':1,'generatedAt':int(now.timestamp()*1000),'sha256':digest,'image_url':name,'weatherUpdatedAt':current.get('updateTime'),'timezone':'Asia/Hong_Kong','lunar':lunar}
     (OUT/'manifest.json').write_text(json.dumps(meta,ensure_ascii=False),encoding='utf-8')
     (OUT/'index.html').write_text('<!doctype html><html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>屯门日历</title><style>body{background:#eee;text-align:center;font-family:sans-serif}img{max-width:100%;height:auto}p{font-size:14px}</style><h1>屯门日历</h1><p>云端每半小时计划更新；调度可能延迟。图片底部显示更新时间。</p><img src="screen.png" alt="屯门天气和中文月历"><p><a href="manifest.json">更新状态</a> · 天气来源：香港天文台</p></html>',encoding='utf-8')
     print(json.dumps(meta,ensure_ascii=False))
