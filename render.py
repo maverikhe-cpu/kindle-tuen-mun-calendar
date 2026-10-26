@@ -40,7 +40,7 @@ def render(now,current,forecast,lunar=None):
     station=next((x for x in temps if x['place'] in ('屯门','屯門')),None)
     updated=current.get('temperature',{}).get('recordTime',current.get('updateTime',''))
     text(28,239,'屯门站气温',19)
-    text(27,266,f"{station['value']}°C" if station else '暂无数据',58)
+    text(27,266,f"{station['value']}°C" if station else '暂无数据',48)
     label='实测 '+updated[11:16] if updated[:10]==now.strftime('%Y-%m-%d') else '实测 '+updated[:16].replace('T',' ')
     text(29,326,label,16)
     codes=[code for code in current.get('icon',[]) if code in LABELS]
