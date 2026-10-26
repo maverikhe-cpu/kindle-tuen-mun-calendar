@@ -17,3 +17,5 @@ Cloudflare Worker 每 5 分钟检查图片时间，超过 25 分钟且没有运�
 调度器源码位于 `scheduler/`，部署使用 `npx wrangler deploy --config scheduler/wrangler.jsonc`。GitHub 凭证只存于 Cloudflare 加密 secret `GITHUB_TOKEN`，不写入源码；凭证撤销后需要重新配置。`node --test scheduler/worker.test.mjs` 验证新鲜图片跳过、过期补跑、运行中去重和接口失败。Cloudflare 日志记录 fresh / already-running / dispatched，可核对真实定时调用。
 
 当前天气显示黑白图标和中文说明，使用 rhrread 的 icon 代码（全港概况），不代表屯门站独立观测；温度仍是屯门站实测。代码说明：https://www.hko.gov.hk/textonly/v2/explain/wxicon_sc.htm 。缺少或不认识的代码不推测天气。
+
+版式使用大日期、细分隔线、独立天气区和圆形当日标记；所有文字按实际字形边界对齐，兼容云端 Noto Sans CJK 字体。月历自动容纳六行，支持缺失数据与较长天气说明。

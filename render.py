@@ -24,54 +24,70 @@ def fetch_url(url):
 
 def render(now,current,forecast,lunar=None):
     im=Image.new('L',(600,800),255); d=ImageDraw.Draw(im)
-    def text(x,y,s,size=22,fill=0):d.text((x,y),str(s),font=ImageFont.truetype(FONT,size),fill=fill)
-    def center(x,y,s,size=22,fill=0):
-        f=ImageFont.truetype(FONT,size);d.text((x-d.textlength(str(s),font=f)/2,y),str(s),font=f,fill=fill)
-    def rule(y):d.line((28,y,572,y),fill=0,width=2)
-    text(28,22,'香港 · 屯门',26);text(402,26,now.strftime('%Y 年 %m 月'),20);rule(65)
-    text(28,75,f'{now.day:02}',110)
-    text(205,94,'星期'+'一二三四五六日'[now.weekday()],38)
-    text(207,150,now.strftime('%Y / %m / %d'),23)
+    def text(x,y,s,size=22,fill=0,align='left',width=None):
+        s=str(s)
+        while True:
+            f=ImageFont.truetype(FONT,size)
+            if width is None or d.textlength(s,font=f)<=width or size<=12:break
+            size-=1
+        box=d.textbbox((0,0),s,font=f)
+        if align=='right':x-=d.textlength(s,font=f)
+        elif align=='center':x-=d.textlength(s,font=f)/2
+        d.text((x-box[0],y-box[1]),s,font=f,fill=fill)
+    def rule(y):d.line((38,y,562,y),fill=0,width=1)
+
+    text(38,32,'香港  /  屯门',20)
+    text(562,34,now.strftime('%Y  /  %m'),19,align='right')
+    rule(66)
+    text(32,91,f'{now.day:02}',142)
+    text(290,103,'星期'+'一二三四五六日'[now.weekday()],34)
     lunar_date=(lunar or {}).get('LunarDate','').replace('閏','闰').replace('臘','腊')
     lunar_year=(lunar or {}).get('LunarYear','').split('，')[0]
-    text(207,186,('农历 '+lunar_year+' '+lunar_date) if lunar_date else '农历暂不可用',20)
-    rule(222)
+    text(292,160,'农历  '+lunar_year if lunar_date else '农历暂不可用',17)
+    if lunar_date:text(292,190,lunar_date,24)
+    rule(237)
+
     temps=current.get('temperature',{}).get('data',[])
-    station=next((x for x in temps if x['place'] in ('屯门','屯門')),None)
-    updated=current.get('temperature',{}).get('recordTime',current.get('updateTime',''))
-    text(28,239,'屯门站气温',19)
-    text(27,266,f"{station['value']}°C" if station else '暂无数据',48)
-    label='实测 '+updated[11:16] if updated[:10]==now.strftime('%Y-%m-%d') else '实测 '+updated[:16].replace('T',' ')
-    text(29,326,label,16)
-    codes=[code for code in current.get('icon',[]) if code in LABELS]
-    if codes:
-        im.paste(symbol(codes[0]),(28,348))
-        condition='全港：'+'/'.join(LABELS[code] for code in codes)
-        size=16
-        while size>10 and d.textlength(condition,font=ImageFont.truetype(FONT,size))>190:size-=1
-        text(64,354,condition,size)
-    else:
-        text(29,352,'天气情况暂无数据',16)
+    station=next((x for x in temps if x.get('place') in ('屯门','屯門')),None)
+    updated=current.get('temperature',{}).get('recordTime',current.get('updateTime','')) or ''
+    observed=updated[11:16] if updated[:10]==now.strftime('%Y-%m-%d') else updated[:16].replace('T',' ')
+    text(38,255,'屯门实测'+('  /  '+observed if observed else '  /  暂无数据'),16,width=280)
+    codes=[code for code in (current.get('icon') or []) if code in LABELS]
+    if codes:im.paste(symbol(codes[0],60),(32,281))
+    text(108 if codes else 38,286,f"{station['value']}°C" if station else '暂无数据',48 if station else 26,width=180)
+    condition=' / '.join(LABELS[code] for code in codes) if codes else '天气暂无数据'
+    text(562,287,condition,25,align='right',width=260)
+    text(562,322,'全港天气概况',15,align='right')
+
     days=[x for x in forecast.get('weatherForecast',[]) if x['forecastDate']>=now.strftime('%Y%m%d')][:2]
-    for i,day in enumerate(days):
-        x=265+i*160;dt=datetime.strptime(day['forecastDate'],'%Y%m%d')
-        text(x,241,dt.strftime('%m/%d')+' '+day['week'].replace('星期','周'),19)
-        text(x,274,f"{day['forecastMintemp']['value']}–{day['forecastMaxtemp']['value']}°",32)
-        text(x,320,'降雨概率 '+day.get('PSR','--'),16)
-    text(265,348,'预报范围：全港',16);rule(380)
-    text(28,396,now.strftime('%Y 年 %m 月'),24)
-    weekdays='一二三四五六日';cell=76
-    for col,day in enumerate(weekdays):center(72+col*cell,439,day,19)
+    rule(359)
+    for i in range(2):
+        x=38+i*278
+        if i>=len(days):
+            text(x,382,'预报暂无数据',18);continue
+        day=days[i];dt=datetime.strptime(day['forecastDate'],'%Y%m%d')
+        text(x,378,dt.strftime('%m/%d')+' '+day['week'].replace('星期','周'),16)
+        text(x+246,375,f"{day['forecastMintemp']['value']}–{day['forecastMaxtemp']['value']}°",25,align='right')
+        text(x,407,'全港 · 降雨概率 '+day.get('PSR','--'),14,width=246)
+    d.line((300,378,300,422),fill=0,width=1)
+    rule(441)
+
+    text(38,462,f'{now.month:02}  /  月历',20)
+    text(562,465,str(now.year),16,align='right')
+    cell=524/7
+    for col,day in enumerate('一二三四五六日'):
+        text(38+(col+.5)*cell,507,day,16,align='center')
     weeks=calendar.Calendar(0).monthdayscalendar(now.year,now.month)
+    step=34 if len(weeks)==6 else 42
     for row,week in enumerate(weeks):
         for col,day in enumerate(week):
             if not day:continue
-            x=72+col*cell;y=479+row*36
-            if day==now.day:d.rounded_rectangle((x-23,y-2,x+23,y+30),radius=5,fill=0)
-            center(x,y,day,23,255 if day==now.day else 0)
-    rule(709)
-    text(28,726,'数据：香港天文台  ·  图源：云端自动生成',16)
-    text(28,754,'画面更新 '+now.strftime('%m/%d %H:%M')+'  ·  断网时保留最后画面',16)
+            x=38+(col+.5)*cell;y=546+row*step
+            if day==now.day:d.ellipse((x-19,y-9,x+19,y+29),fill=0)
+            text(x,y,day,23,255 if day==now.day else 0,align='center')
+    rule(756)
+    text(38,773,'香港天文台',13)
+    text(562,773,'更新 '+now.strftime('%m/%d %H:%M'),13,align='right')
     return im.convert('1',dither=Image.Dither.NONE)
 
 def main():
