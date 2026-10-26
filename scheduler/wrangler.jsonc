@@ -1,0 +1,9 @@
+{
+  "name": "kindle-calendar-scheduler",
+  "main": "worker.mjs",
+  "account_id": "0c46294f334844f3248651bc1352a712",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "observability": { "enabled": true }
+}

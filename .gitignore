@@ -1,3 +1,6 @@
 public/
 __pycache__/
 .DS_Store
+.wrangler/
+.dev.vars
+node_modules/
