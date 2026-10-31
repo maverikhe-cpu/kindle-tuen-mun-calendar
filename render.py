@@ -36,11 +36,15 @@ def render(now,current,forecast,lunar=None):
         d.text((x-box[0],y-box[1]),s,font=f,fill=fill)
     def rule(y):d.line((32,y,768,y),fill=0,width=1)
     text(32,28,'香港  /  屯门',21)
-    text(768,30,now.strftime('%Y  /  %m'),20,align='right')
+    text(768,30,now.strftime('%Y'),20,align='right')
     rule(64)
     d.line((335,86,335,535),fill=0,width=1)
 
-    text(26,90,f'{now.day:02}',145)
+    text(28,105,f'{now.month:02}',104)
+    text(155,127,'/',48)
+    text(187,105,f'{now.day:02}',104)
+    text(86,192,'月',15,align='center')
+    text(245,192,'日',15,align='center')
     text(32,220,'星期'+'一二三四五六日'[now.weekday()],29)
     lunar_date=(lunar or {}).get('LunarDate','').replace('閏','闰').replace('臘','腊')
     lunar_year=(lunar or {}).get('LunarYear','').split('，')[0]
