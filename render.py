@@ -1,4 +1,4 @@
-"""Landscape calendar; portrait transport image for USB-port-right Kindle."""
+"""Landscape calendar; portrait transport image for USB-port-left Kindle."""
 import calendar, hashlib, json, os, time
 from datetime import datetime
 from pathlib import Path
@@ -95,14 +95,14 @@ def main():
     except Exception:lunar={}
     im=render(now,current,forecast,lunar)
     im.save(OUT/'preview.png')
-    # Physical device rotates counterclockwise to put its bottom USB port on the right.
-    # Pre-rotate pixels clockwise so DayPane can retain its portrait display mode.
-    im.transpose(Image.Transpose.ROTATE_270).save(OUT/'screen.png')
+    # Physical device rotates clockwise to put its bottom USB port on the left.
+    # Pre-rotate pixels counterclockwise so DayPane can retain its portrait display mode.
+    im.transpose(Image.Transpose.ROTATE_90).save(OUT/'screen.png')
     image=(OUT/'screen.png').read_bytes();digest=hashlib.sha256(image).hexdigest()
     # Content-addressed image prevents manifest/image races during deployment.
     name='image-'+digest[:16]+'.png';(OUT/name).write_bytes(image)
     meta={'schemaVersion':1,'generatedAt':int(now.timestamp()*1000),'sha256':digest,'image_url':name,'weatherUpdatedAt':current.get('updateTime'),'timezone':'Asia/Hong_Kong','lunar':lunar}
     (OUT/'manifest.json').write_text(json.dumps(meta,ensure_ascii=False),encoding='utf-8')
-    (OUT/'index.html').write_text('<!doctype html><html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>屯门日历</title><style>body{background:#eee;text-align:center;font-family:sans-serif}img{max-width:100%;height:auto}p{font-size:14px}</style><h1>屯门日历</h1><p>横版日历 · Kindle 充电口朝右摆放。保持 KOReader 原来的竖屏方向；云端约每半小时更新。</p><img src="preview.png" alt="屯门天气和中文月历"><p><a href="manifest.json">更新状态</a> · 天气来源：香港天文台</p></html>',encoding='utf-8')
+    (OUT/'index.html').write_text('<!doctype html><html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>屯门日历</title><style>body{background:#eee;text-align:center;font-family:sans-serif}img{max-width:100%;height:auto}p{font-size:14px}</style><h1>屯门日历</h1><p>横版日历 · Kindle 充电口朝左摆放。保持 KOReader 原来的竖屏方向；云端约每半小时更新。</p><img src="preview.png" alt="屯门天气和中文月历"><p><a href="manifest.json">更新状态</a> · 天气来源：香港天文台</p></html>',encoding='utf-8')
     print(json.dumps(meta,ensure_ascii=False))
 if __name__=='__main__':main()
